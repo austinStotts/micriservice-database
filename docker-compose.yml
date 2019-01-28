@@ -1,0 +1,21 @@
+version: '2'
+services:
+
+  app:
+    container_name: serviceDB
+    restart: always
+    build: .
+    ports:
+      - '80:8991'
+    links:
+      - postgres
+
+  postgres:
+    container_name: postgres
+    image: postgres
+    environment:
+      POSTGRES_PASSWORD: 12345678
+      POSTGRES_USER: Austin
+      POSTGRES_DB: chat
+    ports:
+      - '5432:5432'
