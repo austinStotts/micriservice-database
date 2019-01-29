@@ -10,6 +10,8 @@ import (
 	_ "github.com/lib/pq"
 )
 
+var connectionString = "user=Austin dbname=chat password=12345678 host=postgres sslmode=disable"
+
 // server for listening and responding to database queries
 // listen on port 8991
 // handle get request
@@ -17,10 +19,6 @@ import (
 // and handle custom queries
 func main() {
 	fmt.Println("Roger Roger")
-	err := db.Ping()
-	if err != nil {
-		panic(err)
-	}
 
 	http.HandleFunc("/api/create", handleCreate)
 	http.HandleFunc("/api/room", handleGetMany)
@@ -28,6 +26,7 @@ func main() {
 	http.HandleFunc("/run/custom/query", handleCustom)
 
 	http.HandleFunc("/stats", func(res http.ResponseWriter, req *http.Request) {
+		fmt.Println("> stats")
 		requests++
 		s := time.Since(start)
 		since := fmt.Sprintf("%v", s)
@@ -42,11 +41,8 @@ func main() {
 		res.Write(response)
 	})
 
-	http.ListenAndServe(":8991", nil)
+	http.ListenAndServe(":3000", nil)
 }
-
-var connectionString = "user=Austin dbname=chat password=12345678 host=127.0.0.1 sslmode=disable"
-var db, err = sql.Open("postgres", connectionString)
 
 var requests int
 var start = time.Now()
@@ -82,12 +78,16 @@ type create struct {
 
 // input row into database
 func handleCreate(res http.ResponseWriter, req *http.Request) {
+	db, err := sql.Open("postgres", connectionString)
+	if err != nil {
+		panic(err)
+	}
 	requests++
 	// decode request body
 	decoder := json.NewDecoder(req.Body)
 	var request create
-	err := decoder.Decode(&request)
-	if err != nil {
+	er := decoder.Decode(&request)
+	if er != nil {
 		panic(err)
 	}
 
@@ -103,7 +103,7 @@ func handleCreate(res http.ResponseWriter, req *http.Request) {
 		if err != nil {
 			panic(err)
 		}
-		queryString := fmt.Sprintf("INSERT INTO messages (message, username, room, created, type) VALUES (%v, %v, %v, %v, %v)",
+		queryString := fmt.Sprintf("INSERT INTO messages (message, username, room, created, type) VALUES ('%v', '%v', '%v', '%v', '%v')",
 			request.Message, request.Username, request.Room, request.Created, request.Type)
 		result, err := db.Query(queryString)
 		if err != nil {
@@ -116,12 +116,16 @@ func handleCreate(res http.ResponseWriter, req *http.Request) {
 
 // get all from a room
 func handleGetMany(res http.ResponseWriter, req *http.Request) {
+	db, err := sql.Open("postgres", connectionString)
+	if err != nil {
+		panic(err)
+	}
 	requests++
 	// decode request body
 	decoder := json.NewDecoder(req.Body)
 	var request room
-	err := decoder.Decode(&request)
-	if err != nil {
+	er := decoder.Decode(&request)
+	if er != nil {
 		panic(err)
 	}
 
@@ -133,7 +137,7 @@ func handleGetMany(res http.ResponseWriter, req *http.Request) {
 		}
 		res.Write(reject)
 	} else {
-		queryString := fmt.Sprintf("SELECT * FROM messages WHERE room = %v LIMIT %v",
+		queryString := fmt.Sprintf("SELECT * FROM messages WHERE room = '%v' LIMIT %v",
 			request.Room, request.Limit)
 		result, err := db.Query(queryString)
 		if err != nil {
@@ -158,6 +162,10 @@ func handleGetMany(res http.ResponseWriter, req *http.Request) {
 }
 
 func handleChatInit(res http.ResponseWriter, req *http.Request) {
+	db, err := sql.Open("postgres", connectionString)
+	if err != nil {
+		panic(err)
+	}
 	requests++
 	q := req.URL.Query()
 	password := q.Get("password")
@@ -175,7 +183,7 @@ func handleChatInit(res http.ResponseWriter, req *http.Request) {
 			username VARCHAR(48) NOT NULL,
 			room VARCHAR(60) NOT NULL,
 			created VARCHAR(60) NOT NULL,
-			type VARCHAR(24) NOT NULL,
+			type VARCHAR(24) NOT NULL
 		)`)
 		if err != nil {
 			panic(err)
@@ -190,6 +198,10 @@ func handleChatInit(res http.ResponseWriter, req *http.Request) {
 }
 
 func handleCustom(res http.ResponseWriter, req *http.Request) {
+	db, err := sql.Open("postgres", connectionString)
+	if err != nil {
+		panic(err)
+	}
 	requests++
 	q := req.URL.Query()
 	password := q.Get("password")
