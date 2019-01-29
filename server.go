@@ -13,10 +13,6 @@ import (
 var connectionString = "user=Austin dbname=chat password=12345678 host=postgres sslmode=disable"
 
 // server for listening and responding to database queries
-// listen on port 8991
-// handle get request
-// handle post request
-// and handle custom queries
 func main() {
 	fmt.Println("Roger Roger")
 
@@ -78,6 +74,7 @@ type create struct {
 
 // input row into database
 func handleCreate(res http.ResponseWriter, req *http.Request) {
+	fmt.Println("create request")
 	db, err := sql.Open("postgres", connectionString)
 	if err != nil {
 		panic(err)
@@ -91,8 +88,10 @@ func handleCreate(res http.ResponseWriter, req *http.Request) {
 		panic(err)
 	}
 
+	fmt.Printf("request -> %v %v %v %v %v %v", request.Password, request.Message, request.Username, request.Room, request.Created, request.Type)
+
 	// handle credentials
-	if request.Password != "0511unlock" {
+	if request.Password != "force" {
 		reject, err := json.Marshal("error... access denied :(")
 		if err != nil {
 			panic(err)
